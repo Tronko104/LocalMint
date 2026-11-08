@@ -2,7 +2,8 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -19,7 +20,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -54,13 +55,14 @@ jobs:
           cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/LocalMint-Chess.apk
           ls -lh release-apk/
 
-      - name: Upload APK to Artifacts
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: LocalMint-Chess-apk
           path: release-apk/LocalMint-Chess.apk
+          retention-days: 30
 
-      - name: Create or Update Release
+      - name: Create or Update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -70,13 +72,5 @@ jobs:
           else
             gh release create "$TAG" release-apk/LocalMint-Chess.apk \
               --title "LocalMint Chess v1.0.0 (Android APK)" \
-              --notes "### 🌱 LocalMint Chess v1.0.0 (APK per Android)
-
-Scarica il file **LocalMint-Chess.apk** allegato a questa release per installare l'applicazione direttamente sul tuo smartphone Android!
-
-- **Motore Stockfish 19 NNUE Offline:** esecuzione al 100% in locale senza abbonamenti.
-- **Game Review stile Chess.com:** precisione % e badge per ogni mossa (Brillante, Migliore, Blunder).
-- **Import da Chess.com:** scarica le partite dal tuo account con un tocco via API.
-- **Allenatore Puzzle:** oltre 100 problemi tattici con Elo progressivo.
-- **Bot a Elo Scalabile:** da Martin 250 a Stockfish 3200+."
+              --notes "Scarica LocalMint-Chess.apk per installare l'app sul tuo smartphone Android."
           fi
