@@ -196,7 +196,7 @@ export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ boardTheme }) => {
       </div>
 
       {/* Main Board */}
-      <div className="max-w-[480px] mx-auto w-full">
+      <div className="flex items-center justify-center w-full my-auto shrink-0">
         <ChessBoard
           game={game}
           orientation={isPlayerWhite ? 'white' : 'black'}

@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Chess } from 'chess.js';
 import { ChessBoard } from '../components/ChessBoard';
-import { EvaluationBar } from '../components/EvaluationBar';
 import { BotSelectorModal } from '../components/BotSelectorModal';
 import { GameOverModal } from '../components/GameOverModal';
-import type { Bot, Evaluation, BoardTheme } from '../types/chess';
+import type { Bot, Evaluation, BoardTheme, PieceType } from '../types/chess';
 import { BOTS } from '../data/bots';
 import { stockfish } from '../utils/stockfishWorker';
 import { soundManager } from '../utils/audio';
@@ -227,40 +226,47 @@ export const PlayView: React.FC<PlayViewProps> = ({ onAnalyzeGame, boardTheme })
     }
   };
 
-  // Material advantage calculation
-  const getMaterialAdvantage = () => {
-    const board = game.board();
-    const values: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
-    let whiteScore = 0;
-    let blackScore = 0;
+  // Captured pieces & material calculation
+  const captured = React.useMemo(() => {
+    const history = game.history({ verbose: true });
+    const whiteCaptured: PieceType[] = [];
+    const blackCaptured: PieceType[] = [];
 
-    for (let r = 0; r < 8; r++) {
-      for (let c = 0; c < 8; c++) {
-        const piece = board[r][c];
-        if (piece) {
-          if (piece.color === 'w') whiteScore += values[piece.type];
-          else blackScore += values[piece.type];
+    for (const move of history) {
+      if (move.captured) {
+        if (move.color === 'w') {
+          whiteCaptured.push(move.captured as PieceType);
+        } else {
+          blackCaptured.push(move.captured as PieceType);
         }
       }
     }
 
-    const diff = whiteScore - blackScore;
-    return {
-      whiteAdv: diff > 0 ? `+${diff}` : null,
-      blackAdv: diff < 0 ? `+${Math.abs(diff)}` : null,
-    };
-  };
+    const pieceValues: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+    const sortVal = (a: PieceType, b: PieceType) => (pieceValues[b] || 0) - (pieceValues[a] || 0);
+    whiteCaptured.sort(sortVal);
+    blackCaptured.sort(sortVal);
 
-  const material = getMaterialAdvantage();
+    const whiteScore = whiteCaptured.reduce((sum, p) => sum + (pieceValues[p] || 0), 0);
+    const blackScore = blackCaptured.reduce((sum, p) => sum + (pieceValues[p] || 0), 0);
+    const diff = whiteScore - blackScore;
+
+    return {
+      whiteCaptured,
+      blackCaptured,
+      whiteAdvantage: diff > 0 ? `+${diff}` : null,
+      blackAdvantage: diff < 0 ? `+${Math.abs(diff)}` : null,
+    };
+  }, [game]);
 
   return (
-    <div className="flex flex-col h-full max-w-lg mx-auto w-full px-2 py-2">
-      {/* Top Bar Mode Selector */}
-      <div className="flex items-center justify-between mb-2 px-1">
+    <div className="flex flex-col h-full max-w-md mx-auto w-full px-2 py-1 justify-between select-none">
+      {/* Top Bar Mode & Bot Selector */}
+      <div className="flex items-center justify-between px-1 py-0.5 shrink-0">
         <div className="flex bg-[#21201d] rounded-lg p-0.5 border border-[#3d3b37]">
           <button
             onClick={() => setPlayMode('bot')}
-            className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
               playMode === 'bot' ? 'bg-[#81b64c] text-white shadow-xs' : 'text-[#8b8987] hover:text-white'
             }`}
           >
@@ -269,7 +275,7 @@ export const PlayView: React.FC<PlayViewProps> = ({ onAnalyzeGame, boardTheme })
           </button>
           <button
             onClick={() => setPlayMode('pass')}
-            className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
               playMode === 'pass' ? 'bg-[#81b64c] text-white shadow-xs' : 'text-[#8b8987] hover:text-white'
             }`}
           >
@@ -278,136 +284,207 @@ export const PlayView: React.FC<PlayViewProps> = ({ onAnalyzeGame, boardTheme })
           </button>
         </div>
 
-        {playMode === 'bot' && (
-          <button
-            onClick={() => setIsBotSelectorOpen(true)}
-            className="flex items-center gap-1.5 bg-[#262522] hover:bg-[#302e2b] border border-[#3d3b37] px-2.5 py-1 rounded-lg text-xs font-medium text-white transition-colors cursor-pointer"
-          >
-            <span>{currentBot.avatar}</span>
-            <span className="font-semibold">{currentBot.name}</span>
-            <span className="text-[10px] text-[#81b64c] font-bold bg-[#81b64c]/15 px-1 rounded">
-              {currentBot.elo}
-            </span>
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          {evaluation && (
+            <div className="flex items-center gap-1 bg-[#21201d] px-2 py-1 rounded-lg border border-[#3d3b37] text-[10px] font-mono font-bold text-[#c3c1be]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#81b64c] animate-pulse" />
+              <span>
+                {evaluation.isMate && evaluation.mateIn !== undefined
+                  ? (evaluation.mateIn > 0 ? `M${evaluation.mateIn}` : `-M${Math.abs(evaluation.mateIn)}`)
+                  : evaluation.score !== undefined
+                  ? (evaluation.score > 0 ? `+${(evaluation.score / 100).toFixed(1)}` : (evaluation.score / 100).toFixed(1))
+                  : '0.0'}
+              </span>
+            </div>
+          )}
+
+          {playMode === 'bot' && (
+            <button
+              onClick={() => setIsBotSelectorOpen(true)}
+              className="flex items-center gap-1.5 bg-[#262522] hover:bg-[#302e2b] border border-[#3d3b37] px-2.5 py-1 rounded-lg text-xs font-semibold text-white transition-colors cursor-pointer"
+            >
+              <span>{currentBot.avatar}</span>
+              <span className="font-bold">{currentBot.name}</span>
+              <span className="text-[10px] text-[#81b64c] font-black bg-[#81b64c]/15 px-1 py-0.2 rounded">
+                {currentBot.elo}
+              </span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Opponent Card (Top) */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#262522] rounded-t-lg border border-b-0 border-[#3d3b37]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#302e2b] border border-[#4d4b46] flex items-center justify-center text-lg">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#262522] rounded-xl border border-[#3d3b37] shrink-0 my-0.5">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-xl bg-[#302e2b] border border-[#4d4b46] flex items-center justify-center text-lg shrink-0 shadow-inner">
             {playMode === 'bot' ? currentBot.avatar : '♟️'}
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-white text-xs">
+              <span className="font-bold text-white text-xs truncate max-w-[130px]">
                 {playMode === 'bot' ? currentBot.name : 'Giocatore 2 (Nero)'}
               </span>
               {playMode === 'bot' && (
-                <span className="text-[10px] font-bold text-[#81b64c]">({currentBot.elo})</span>
+                <span className="text-[10px] font-bold text-[#81b64c] bg-[#81b64c]/15 px-1 rounded">
+                  {currentBot.elo}
+                </span>
               )}
             </div>
-            {isBotThinking && (
-              <span className="text-[10px] text-[#81b64c] font-semibold animate-pulse">
-                Sto pensando alla mossa...
-              </span>
-            )}
+            {/* Captured Pieces by Opponent */}
+            <div className="flex items-center gap-1 mt-0.5 h-3.5">
+              <div className="flex items-center -space-x-1.5 overflow-hidden">
+                {(orientation === 'white' ? captured.blackCaptured : captured.whiteCaptured).map((p, idx) => (
+                  <span key={idx} className="text-[11px] leading-none select-none text-[#edeed1]">
+                    {p === 'q' ? '♕' : p === 'r' ? '♖' : p === 'b' ? '♗' : p === 'n' ? '♘' : '♙'}
+                  </span>
+                ))}
+              </div>
+              {(orientation === 'white' ? captured.blackAdvantage : captured.whiteAdvantage) && (
+                <span className="text-[10px] font-black text-[#c3c1be]">
+                  {orientation === 'white' ? captured.blackAdvantage : captured.whiteAdvantage}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-        {material.blackAdv && (
-          <span className="text-[11px] font-bold text-[#c3c1be] bg-[#302e2b] px-1.5 py-0.5 rounded border border-[#4d4b46]">
-            {material.blackAdv}
-          </span>
-        )}
+
+        {/* Right side thinking status */}
+        <div className="flex items-center gap-2 shrink-0">
+          {isBotThinking ? (
+            <div className="flex items-center gap-1 bg-[#81b64c]/20 border border-[#81b64c]/40 px-2 py-0.5 rounded-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#81b64c] animate-ping" />
+              <span className="text-[10px] font-bold text-[#81b64c]">Calcolo...</span>
+            </div>
+          ) : (
+            <div className="text-[10px] font-semibold text-[#8b8987] bg-[#302e2b] px-2 py-0.5 rounded-md border border-[#3d3b37]">
+              {game.turn() === (orientation === 'white' ? 'b' : 'w') ? 'Mossa in corso' : 'In attesa'}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Main Board Area with Vertical Eval Bar */}
-      <div className="flex gap-2 items-stretch justify-center w-full">
-        {/* Evaluation Bar */}
-        <div className="hidden sm:block">
-          <EvaluationBar evaluation={evaluation} orientation={orientation} />
-        </div>
-
-        {/* Board */}
-        <div className="flex-1 max-w-[480px]">
-          <ChessBoard
-            game={game}
-            orientation={orientation}
-            theme={boardTheme}
-            interactive={!isBotThinking && !game.isGameOver()}
-            lastMove={lastMove}
-            bestMoveArrow={bestMoveArrow}
-            onMove={handleMove}
-          />
-        </div>
+      {/* Main Board Area (Strict 1:1 Aspect Ratio) */}
+      <div className="flex items-center justify-center w-full my-auto shrink-0">
+        <ChessBoard
+          game={game}
+          orientation={orientation}
+          theme={boardTheme}
+          interactive={!isBotThinking && !game.isGameOver()}
+          lastMove={lastMove}
+          bestMoveArrow={bestMoveArrow}
+          onMove={handleMove}
+        />
       </div>
 
       {/* User Card (Bottom) */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#262522] rounded-b-lg border border-t-0 border-[#3d3b37]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#81b64c]/20 border border-[#81b64c]/40 flex items-center justify-center text-sm font-bold text-[#81b64c]">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#262522] rounded-xl border border-[#3d3b37] shrink-0 my-0.5">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-xl bg-[#81b64c]/20 border border-[#81b64c]/50 flex items-center justify-center text-xs font-black text-[#81b64c] shrink-0 shadow-inner">
             Tu
           </div>
-          <div>
-            <span className="font-bold text-white text-xs">Tu (Bianco)</span>
-            <div className="text-[10px] text-[#8b8987]">Motore Stockfish 19 NNUE Attivo</div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-white text-xs">Tu ({orientation === 'white' ? 'Bianco' : 'Nero'})</span>
+              <span className="text-[10px] font-semibold text-[#8b8987]">1200</span>
+            </div>
+            {/* Captured Pieces by User */}
+            <div className="flex items-center gap-1 mt-0.5 h-3.5">
+              <div className="flex items-center -space-x-1.5 overflow-hidden">
+                {(orientation === 'white' ? captured.whiteCaptured : captured.blackCaptured).map((p, idx) => (
+                  <span key={idx} className="text-[11px] leading-none select-none text-[#8b8987]">
+                    {p === 'q' ? '♛' : p === 'r' ? '♜' : p === 'b' ? '♝' : p === 'n' ? '♞' : '♟'}
+                  </span>
+                ))}
+              </div>
+              {(orientation === 'white' ? captured.whiteAdvantage : captured.blackAdvantage) && (
+                <span className="text-[10px] font-black text-[#81b64c]">
+                  {orientation === 'white' ? captured.whiteAdvantage : captured.blackAdvantage}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-        {material.whiteAdv && (
-          <span className="text-[11px] font-bold text-[#c3c1be] bg-[#302e2b] px-1.5 py-0.5 rounded border border-[#4d4b46]">
-            {material.whiteAdv}
-          </span>
+
+        {/* User Turn Indicator */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {game.turn() === (orientation === 'white' ? 'w' : 'b') && !game.isGameOver() && (
+            <div className="flex items-center gap-1 bg-[#81b64c]/20 border border-[#81b64c]/40 px-2 py-0.5 rounded-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#81b64c] animate-pulse" />
+              <span className="text-[10px] font-bold text-[#81b64c]">Tocca a te</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Move History Ribbon */}
+      <div className="flex items-center gap-1.5 overflow-x-auto px-2 py-1 bg-[#262522] rounded-lg border border-[#3d3b37] text-xs font-mono shrink-0 custom-scrollbar">
+        {game.history().length === 0 ? (
+          <span className="text-[10px] text-[#8b8987] italic">In attesa della prima mossa...</span>
+        ) : (
+          game.history().map((m, idx) => (
+            <span
+              key={idx}
+              className={`shrink-0 px-1 py-0.5 rounded text-[10px] font-bold ${
+                idx === game.history().length - 1
+                  ? 'bg-[#81b64c] text-white'
+                  : 'text-[#c3c1be] bg-[#302e2b]'
+              }`}
+            >
+              {idx % 2 === 0 ? `${Math.floor(idx / 2) + 1}. ` : ''}
+              {m}
+            </span>
+          ))
         )}
       </div>
 
       {/* Action Controls Bar */}
-      <div className="grid grid-cols-5 gap-1.5 mt-2.5">
+      <div className="grid grid-cols-5 gap-1 shrink-0 mt-0.5">
         <button
           onClick={handleHint}
           disabled={isBotThinking || game.isGameOver()}
-          className="flex flex-col items-center justify-center py-2 bg-[#262522] hover:bg-[#302e2b] disabled:opacity-40 border border-[#3d3b37] rounded-xl text-white transition-colors cursor-pointer"
+          className="flex flex-col items-center justify-center py-1.5 bg-[#262522] hover:bg-[#302e2b] disabled:opacity-40 border border-[#3d3b37] rounded-xl text-white transition-colors cursor-pointer"
           title="Suggerimento Stockfish"
         >
           <Lightbulb className="w-4 h-4 text-[#f0c15c] mb-0.5" />
-          <span className="text-[10px] font-medium text-[#c3c1be]">Aiuto</span>
+          <span className="text-[9px] font-bold text-[#c3c1be]">Aiuto</span>
         </button>
 
         <button
           onClick={handleTakeback}
           disabled={isBotThinking || game.history().length === 0}
-          className="flex flex-col items-center justify-center py-2 bg-[#262522] hover:bg-[#302e2b] disabled:opacity-40 border border-[#3d3b37] rounded-xl text-white transition-colors cursor-pointer"
+          className="flex flex-col items-center justify-center py-1.5 bg-[#262522] hover:bg-[#302e2b] disabled:opacity-40 border border-[#3d3b37] rounded-xl text-white transition-colors cursor-pointer"
           title="Ritira mossa"
         >
           <RotateCcw className="w-4 h-4 text-[#5c8bb0] mb-0.5" />
-          <span className="text-[10px] font-medium text-[#c3c1be]">Ritira</span>
+          <span className="text-[9px] font-bold text-[#c3c1be]">Ritira</span>
         </button>
 
         <button
           onClick={() => setOrientation((prev) => (prev === 'white' ? 'black' : 'white'))}
-          className="flex flex-col items-center justify-center py-2 bg-[#262522] hover:bg-[#302e2b] border border-[#3d3b37] rounded-xl text-white transition-colors cursor-pointer"
+          className="flex flex-col items-center justify-center py-1.5 bg-[#262522] hover:bg-[#302e2b] border border-[#3d3b37] rounded-xl text-white transition-colors cursor-pointer"
           title="Capovolgi scacchiera"
         >
           <Shuffle className="w-4 h-4 text-[#86a666] mb-0.5" />
-          <span className="text-[10px] font-medium text-[#c3c1be]">Ruota</span>
+          <span className="text-[9px] font-bold text-[#c3c1be]">Ruota</span>
         </button>
 
         <button
           onClick={handleResign}
           disabled={game.isGameOver() || game.history().length === 0}
-          className="flex flex-col items-center justify-center py-2 bg-[#262522] hover:bg-[#302e2b] disabled:opacity-40 border border-[#3d3b37] rounded-xl text-white transition-colors cursor-pointer"
+          className="flex flex-col items-center justify-center py-1.5 bg-[#262522] hover:bg-[#302e2b] disabled:opacity-40 border border-[#3d3b37] rounded-xl text-white transition-colors cursor-pointer"
           title="Abbandona la partita"
         >
           <Flag className="w-4 h-4 text-[#ca3431] mb-0.5" />
-          <span className="text-[10px] font-medium text-[#c3c1be]">Resa</span>
+          <span className="text-[9px] font-bold text-[#c3c1be]">Resa</span>
         </button>
 
         <button
           onClick={handleNewGame}
-          className="flex flex-col items-center justify-center py-2 bg-[#81b64c] hover:bg-[#96c95d] rounded-xl text-white font-bold transition-transform active:scale-95 cursor-pointer shadow-md"
+          className="flex flex-col items-center justify-center py-1.5 bg-[#81b64c] hover:bg-[#96c95d] rounded-xl text-white font-bold transition-transform active:scale-95 cursor-pointer shadow-md"
           title="Nuova Partita"
         >
           <RefreshCw className="w-4 h-4 mb-0.5" />
-          <span className="text-[10px]">Nuova</span>
+          <span className="text-[9px]">Nuova</span>
         </button>
       </div>
 

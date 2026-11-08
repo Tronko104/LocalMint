@@ -5,11 +5,15 @@
   --bg-secondary: #262522;
   --bg-tertiary: #21201d;
   --green-primary: #81b64c;
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
 }
 
-body {
+html, body {
   margin: 0;
   padding: 0;
+  height: 100%;
+  width: 100%;
   background-color: #302e2b;
   color: #ffffff;
   overflow: hidden;

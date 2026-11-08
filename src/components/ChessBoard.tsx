@@ -10,6 +10,7 @@ interface ChessBoardProps {
   interactive?: boolean;
   lastMove?: { from: string; to: string } | null;
   bestMoveArrow?: { from: string; to: string } | null;
+  moveBadge?: { square: string; symbol: string; color: string } | null;
   onMove: (from: string, to: string, promotion?: string) => boolean;
 }
 
@@ -20,6 +21,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
   interactive = true,
   lastMove = null,
   bestMoveArrow = null,
+  moveBadge = null,
   onMove,
 }) => {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
   const displayFiles = isFlipped ? [...files].reverse() : files;
   const displayRanks = isFlipped ? [...ranks].reverse() : ranks;
 
-  // Board colors based on theme
+  // Authentic board colors (matching open-chess and Chess.com standards)
   const getThemeColors = () => {
     switch (theme) {
       case 'wood':
@@ -44,7 +46,7 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
         return { dark: '#4b7399', light: '#eae9d2' };
       case 'green':
       default:
-        return { dark: '#779952', light: '#edeed1' };
+        return { dark: '#769656', light: '#eeeed2' };
     }
   };
 
@@ -130,7 +132,15 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
   };
 
   return (
-    <div className="relative w-full aspect-square max-w-[500px] mx-auto select-none rounded-lg overflow-hidden shadow-2xl border-4 border-[#21201d]">
+    <div
+      className="relative select-none rounded-xl overflow-hidden shadow-2xl border-2 sm:border-4 border-[#21201d] shrink-0"
+      style={{
+        width: '100%',
+        maxWidth: 'min(96vw, calc(100dvh - 310px), 430px)',
+        aspectRatio: '1 / 1',
+        margin: '0 auto',
+      }}
+    >
       <div className="grid grid-cols-8 grid-rows-8 w-full h-full">
         {displayRanks.map((rank, rankIndex) =>
           displayFiles.map((file, fileIndex) => {
@@ -143,45 +153,47 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
             const isLastMoveTo = lastMove?.to === square;
             const isKingInCheck = checkSquare === square;
 
-            // Background color
+            // Background color (authentic Chess.com)
             let bg = isDark ? themeColors.dark : themeColors.light;
             if (isSelected) {
-              bg = '#baca44'; // Bright yellow-green highlight
+              bg = '#baca2b'; // Selected highlight
             } else if (isLastMoveFrom || isLastMoveTo) {
-              bg = isDark ? '#baca44b3' : '#f5f682b3';
+              bg = isDark ? '#baca44' : '#f7f769'; // Last move highlight
             }
 
             return (
               <div
                 key={square}
                 onClick={() => handleSquareClick(square)}
-                className="relative flex items-center justify-center cursor-pointer transition-colors duration-100"
+                className="relative aspect-square flex items-center justify-center cursor-pointer select-none transition-colors duration-75 overflow-hidden"
                 style={{ backgroundColor: bg }}
               >
-                {/* Check warning indicator */}
+                {/* King in check red radial gradient */}
                 {isKingInCheck && (
                   <div
-                    className="absolute inset-0 rounded-full animate-pulse"
+                    className="absolute inset-0 rounded-full animate-pulse pointer-events-none"
                     style={{
-                      background: 'radial-gradient(circle, rgba(235,50,50,0.85) 0%, rgba(200,0,0,0) 70%)',
+                      background: 'radial-gradient(circle, rgba(235, 60, 60, 0.9) 0%, rgba(200, 20, 20, 0) 72%)',
                     }}
                   />
                 )}
 
-                {/* Coordinate labels */}
+                {/* Rank coordinates (left edge) */}
                 {fileIndex === 0 && (
                   <span
-                    className={`absolute top-0.5 left-1 text-[10px] font-bold pointer-events-none ${
-                      isDark ? 'text-[#edeed1]' : 'text-[#779952]'
+                    className={`absolute top-0.5 left-1 text-[10px] font-bold leading-none pointer-events-none select-none ${
+                      isDark ? 'text-[#eeeed2]' : 'text-[#769656]'
                     }`}
                   >
                     {rank}
                   </span>
                 )}
+
+                {/* File coordinates (bottom edge) */}
                 {rankIndex === 7 && (
                   <span
-                    className={`absolute bottom-0.5 right-1 text-[10px] font-bold pointer-events-none ${
-                      isDark ? 'text-[#edeed1]' : 'text-[#779952]'
+                    className={`absolute bottom-0.5 right-1 text-[10px] font-bold leading-none pointer-events-none select-none ${
+                      isDark ? 'text-[#eeeed2]' : 'text-[#769656]'
                     }`}
                   >
                     {file}
@@ -190,17 +202,27 @@ export const ChessBoard: React.FC<ChessBoardProps> = ({
 
                 {/* Piece */}
                 {piece && (
-                  <div className="w-[88%] h-[88%] relative z-10 transition-transform active:scale-95 pointer-events-none">
+                  <div className="w-[88%] h-[88%] relative z-10 transition-transform active:scale-95 pointer-events-none flex items-center justify-center">
                     <ChessPiece type={piece.type as PieceType} color={piece.color as PieceColor} />
                   </div>
                 )}
 
-                {/* Legal move dot or capture ring */}
+                {/* Move hints (dot for empty square, ring for capture) */}
                 {isLegal && !piece && (
-                  <div className="absolute w-3.5 h-3.5 rounded-full bg-[#181715] opacity-25 pointer-events-none" />
+                  <div className="absolute w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-black/25 pointer-events-none" />
                 )}
                 {isLegal && piece && (
-                  <div className="absolute inset-0 border-4 border-[#181715] opacity-35 rounded-full m-1 pointer-events-none" />
+                  <div className="absolute inset-1 rounded-full border-[3.5px] border-black/30 pointer-events-none" />
+                )}
+
+                {/* Move quality badge overlay (Analysis Game Review) */}
+                {moveBadge && moveBadge.square === square && (
+                  <div
+                    className="absolute -top-1 -right-1 z-30 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-md border border-black/20"
+                    style={{ backgroundColor: moveBadge.color }}
+                  >
+                    {moveBadge.symbol}
+                  </div>
                 )}
               </div>
             );

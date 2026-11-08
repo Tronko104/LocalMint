@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Chess } from 'chess.js';
 import { ChessBoard } from '../components/ChessBoard';
-import { EvaluationBar } from '../components/EvaluationBar';
 import { AdvantageGraph } from '../components/AdvantageGraph';
 import { MoveHistory, getBadgeDetails } from '../components/MoveHistory';
 import { ChessComImportModal } from '../components/ChessComImportModal';
@@ -246,24 +245,39 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ initialPgn, boardThe
         </div>
       )}
 
-      {/* Main Board Area with Vertical Eval Bar */}
-      <div className="flex gap-2 items-stretch justify-center w-full mb-2">
-        {/* Evaluation Bar */}
-        <div className="hidden sm:block">
-          <EvaluationBar evaluation={liveEval} />
+      {/* Main Board Area with Evaluation Header */}
+      <div className="flex items-center justify-between px-2 py-1 bg-[#262522] rounded-t-xl border border-b-0 border-[#3d3b37] shrink-0">
+        <span className="text-[11px] font-bold text-[#8b8987] uppercase">Valutazione Motore</span>
+        <div className="flex items-center gap-1.5 bg-[#302e2b] px-2 py-0.5 rounded border border-[#3d3b37]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#81b64c] animate-pulse" />
+          <span className="text-xs font-mono font-bold text-white">
+            {liveEval?.isMate && liveEval?.mateIn !== undefined
+              ? (liveEval.mateIn > 0 ? `M${liveEval.mateIn}` : `-M${Math.abs(liveEval.mateIn)}`)
+              : liveEval?.score !== undefined
+              ? (liveEval.score > 0 ? `+${(liveEval.score / 100).toFixed(1)}` : (liveEval.score / 100).toFixed(1))
+              : '0.0'}
+          </span>
         </div>
+      </div>
 
-        {/* Board */}
-        <div className="flex-1 max-w-[480px]">
-          <ChessBoard
-            game={game}
-            theme={boardTheme}
-            interactive={false}
-            lastMove={lastMove}
-            bestMoveArrow={bestMoveArrow}
-            onMove={() => false}
-          />
-        </div>
+      <div className="flex items-center justify-center w-full my-auto shrink-0 mb-1.5">
+        <ChessBoard
+          game={game}
+          theme={boardTheme}
+          interactive={false}
+          lastMove={lastMove}
+          bestMoveArrow={bestMoveArrow}
+          moveBadge={
+            currentClassifiedMove && lastMove
+              ? {
+                  square: lastMove.to,
+                  symbol: getBadgeDetails(currentClassifiedMove.classification).icon,
+                  color: getBadgeDetails(currentClassifiedMove.classification).color,
+                }
+              : null
+          }
+          onMove={() => false}
+        />
       </div>
 
       {/* Current Move Classification Explanation Box */}

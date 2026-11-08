@@ -26,10 +26,13 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-[#302e2b] text-white overflow-hidden select-none font-sans">
-      {/* Top Mobile App Bar */}
-      <header className="h-12 bg-[#262522] border-b border-[#3d3b37] px-4 flex items-center justify-between shrink-0 shadow-xs z-30">
+      {/* Top Mobile App Bar with Safe Area Top Padding */}
+      <header
+        className="bg-[#262522] border-b border-[#3d3b37] px-4 pb-2.5 flex items-center justify-between shrink-0 shadow-xs z-30"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 36px)' }}
+      >
         <div className="flex items-center gap-2">
-          {/* Logo */}
+          {/* Chess icon badge */}
           <div className="w-7 h-7 rounded-lg bg-[#81b64c] flex items-center justify-center text-base font-black shadow-sm text-[#262522]">
             ♟
           </div>
@@ -69,8 +72,11 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Bottom Navigation Bar (Authentic Chess.com Mobile Style) */}
-      <nav className="h-14 bg-[#21201d] border-t border-[#3d3b37] px-2 flex items-center justify-around shrink-0 z-30">
+      {/* Bottom Navigation Bar (Authentic Chess.com Mobile Style with Safe Area Bottom Padding) */}
+      <nav
+        className="bg-[#21201d] border-t border-[#3d3b37] px-2 pt-1 flex items-center justify-around shrink-0 z-30"
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 14px)' }}
+      >
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
