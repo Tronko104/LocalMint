@@ -1,100 +1,121 @@
 # 🌱 LocalMint Chess
 
-**LocalMint Chess** è un'applicazione mobile di scacchi open-source e gratuita, ispirata all'interfaccia di **Chess.com**, ma progettata per eseguire il motore **Stockfish 19 NNUE interamente in locale e offline sul dispositivo**.
+<p align="center">
+  <img src="public/favicon.svg" width="96" height="96" alt="LocalMint Chess Logo" />
+</p>
+
+<p align="center">
+  <strong>Free, open-source mobile chess app styled after Chess.com, powered by 100% offline local Stockfish 19 NNUE engine.</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Tronko104/LocalMint/releases/latest"><img src="https://img.shields.io/github/v/release/Tronko104/LocalMint?color=81b64c&label=Android%20APK" alt="Release" /></a>
+  <a href="https://github.com/Tronko104/LocalMint/actions"><img src="https://img.shields.io/github/actions/workflow/status/Tronko104/LocalMint/build-apk.yml?branch=main&label=Build%20APK" alt="Build Status" /></a>
+  <img src="https://img.shields.io/badge/Engine-Stockfish%2019%20NNUE%20(Local)-green" alt="Stockfish NNUE" />
+  <img src="https://img.shields.io/badge/License-GPLv3-blue" alt="License" />
+</p>
+
+---
+
+## 📥 Download the Android App (.APK)
+
+You can download and install the standalone Android application directly onto any Android phone or tablet:
+
+👉 **[Download LocalMint-Chess.apk (Latest Release)](https://github.com/Tronko104/LocalMint/releases/latest)**
+
+*No subscriptions, no ads, no internet connection required.*
+
+---
+
+## 🇬🇧 English Description
+
+**LocalMint Chess** is an authentic, pixel-perfect clone of the **Chess.com mobile app**, crafted for chess enthusiasts who want **unlimited Game Review, deep Stockfish analysis, tactical puzzles, and scalable Elo bots** running entirely on the device using WebAssembly and NNUE neural network evaluation.
+
+### ✨ Key Features
+
+1. **♟️ Play vs Adaptive Bots (Elo 250 to 3200+) & Pass & Play:**
+   - Authentic Chess.com character bots with speech bubbles and personality quotes (Martin 250, Wendy 1100, Nelson 1300, Antonio 1500, Laura 1800, Stockfish 3200+).
+   - In-game controls: Options, Resign, Hint (Best move arrows), and Undo.
+   - Live real-time evaluation pill (`+0.4`, `-1.2`, `M2`).
+   - Authentic 2-player Pass & Play on the same screen.
+
+2. **📊 Full Game Review & Analysis Module:**
+   - **Chess.com Public API Importer:** Enter any Chess.com username (e.g. *hikaru*, *magnuscarlsen*, or your own) to fetch your recent games and analyze them with one tap.
+   - **PGN / FEN Manual Importer:** Paste any PGN or FEN position.
+   - **Accuracy Percentage:** Sigmoidal accuracy score for White and Black matching the official Chess.com algorithm.
+   - **Move Classification Badges:** Brilliant (💎), Best (⭐), Excellent (🟢), Good (🔵), Inaccuracy (🟡), Mistake (🟠), Blunder (🔴), Miss (❌), Book (📖).
+   - **Interactive Advantage Area Chart:** Scannable evaluation graph showing game swings.
+
+3. **🧩 Tactical Puzzle Trainer:**
+   - 100+ curated tactical puzzles from the open-source Lichess CC0 database.
+   - Puzzle rating progression (+12 for correct solution, -8 for failure) with streak tracking.
+   - Automatic opponent responses and winning celebration effects.
+
+4. **🎨 Chess.com Mobile Look & Feel:**
+   - Official tournament vector pieces (Lichess `cburnett` set).
+   - Exact 1:1 chessboard aspect ratio (no vertical stretching or distorted squares).
+   - Android safe-area insets padding (notch and status bar icons never overlap game UI).
+   - High-fidelity captured pieces trays with material advantage count (`+1`, `+3`).
+   - Move history navigation ribbon.
+
+5. **🔊 Zero-Latency Web Audio API:**
+   - Realistic wooden piece movements, captures, checks, castling, and win sound effects synthesized locally.
+
+6. **🌐 Bilingual Support (Italian & English):**
+   - Automatically detects your device language (`it` or `en`).
+   - Switch language at any time in **Settings**.
+
+---
+
+## 🇮🇹 Descrizione in Italiano
+
+**LocalMint Chess** è un'applicazione mobile di scacchi open-source e gratuita, fedele all'interfaccia di **Chess.com**, ma progettata per eseguire il motore **Stockfish 19 NNUE interamente in locale e offline sul dispositivo**.
 
 Questo ti permette di avere **analisi di partite illimitate, revisione mosse (Game Review), puzzle infiniti e bot a Elo scalabile senza alcun abbonamento o limitazione.**
 
----
-
-## ✨ Funzionalità Principali
-
-### 1. ♟️ Gioca contro Bot a Elo Scalabile o in 2 Giocatori
-- **Galleria Bot Ispirata a Chess.com:**
-  - **Martin (250 Elo):** Principiante assoluto, commette errori e regala pezzi.
-  - **Wayne (500 Elo):** Principiante che sta apprendendo lo sviluppo.
-  - **Elena (800 Elo):** Giocatrice casual amatoriale.
-  - **Nelson (1300 Elo):** Il temuto bot che gioca la Regina aggressiva al turno 2.
-  - **Antonio (1500 Elo):** Gioco posizionale solido e controllo del centro.
-  - **Laura WFM (1800 Elo):** Attacchi acuti e punizione degli errori.
-  - **Grandmaster Bot (2500 Elo):** Calcolo tattico da Gran Maestro.
-  - **Stockfish 19 NNUE (3200+ Elo):** La massima potenza del motore scacchistico.
-- **Slider Elo Personalizzato (250 - 3200):** Scegli qualsiasi livello di difficoltà desiderato.
-- **Barra di Valutazione in tempo reale (Evaluation Bar):** Valutazione numerica dinamica (`+2.4`, `-1.1`, `M3`).
-- **Pulsanti veloci:** Suggerimento mossa migliore (💡), Ritira mossa (↩️), Ruota scacchiera (🔄), Resa (🏳️).
-
-### 2. 📊 Modulo Analisi & Revisione Partita (Game Review Stile Chess.com)
-- **Importazione Automatica da Chess.com (PubAPI):**
-  - Inserisci qualsiasi username di Chess.com (es. il tuo handle, *hikaru*, *magnuscarlsen*) per scaricare lo storico partite del mese corrente ed eseguire l'analisi con un tocco.
-- **Caricamento PGN o FEN manuale.**
-- **Accuratezza di Gioco (% Precisione):**
-  - Calcolo della precisione per Bianco e Nero con formula sigmoidea identica a quella ufficiale.
-- **Classificazione delle mosse con badge ufficiali:**
-  - 💎 **Brillante (Brilliant):** Sacrificio posizionale vincente.
-  - ⭐ **Migliore (Best):** La mossa top del motore.
-  - 🟢 **Eccellente (Excellent):** Mossa quasi alla pari della migliore.
-  - 🔵 **Buona (Good):** Mossa solida.
-  - 🟡 **Imprecisione (Inaccuracy):** Concede un piccolo vantaggio.
-  - 🟠 **Errore (Mistake):** Compromette la posizione.
-  - 🔴 **Blunder (Grave Errore):** Perde materiale o ribalta la partita.
-  - ❌ **Occasione Persa (Miss):** Mancato scacco matto o tattica forzata.
-  - 📖 **Libro (Book):** Teoria di apertura.
-- **Grafico Interattivo del Vantaggio (Advantage Graph):**
-  - Grafico vettoriale ad area navigabile con cursore per saltare istantaneamente alla mossa desiderata.
-- **Frecce dei Migliori Tratti (Best Move Arrows):**
-  - Frecce visive sulla scacchiera che illustrano cosa avrebbe giocato Stockfish.
-
-### 3. 🧩 Allenamento Tattico (Puzzle Trainer)
-- Database locale integrato di **100+ problemi tattici open-source (CC0)** tratti dalla banca dati di Lichess.
-- **Progressione Rating:** Parti da 1200 Elo e scala la classifica risolvendo problemi (+12 punti per successo, -8 per errore).
-- **Contatore Serie (Streak):** Monitora le combinazioni consecutive risolte.
-- **Risposta Automatica dell'Avversario:** L'app muove in automatico la difesa e ti chiede di chiudere la combinazione.
-- **Effetto Vittoria:** Confetti animati e suoni di trionfo.
-
-### 4. 🔊 Audio & Design Fedele
-- Palette colori ufficiale dark (`#302e2b` / `#262522`) e scacchiera classica verde Chess.com (`#779952` / `#edeed1`).
-- Suoni di gioco realistici sintetizzati a bassissima latenza via **Web Audio API** (nessun file audio esterno da scaricare):
-  - Suono mossa legno naturale, cattura, scacco d'allarme, arrocco e vittoria.
-- 4 Temi Scacchiera selezionabili (Verde Chess.com, Legno Scuro, Ghiaccio Polare, Blu Torneo).
+### 🌟 Caratteristiche in evidenza:
+- **Partite contro Bot iconici:** Martin, Wendy, Nelson, Antonio, Laura e Stockfish 19 NNUE con dialoghi a fumetto in tempo reale.
+- **Game Review completa:** Classificazione di ogni mossa (Brillante, Migliore, Eccellente, Buona, Imprecisione, Errore, Blunder, Occasione Persa), percentuale di precisione e grafico del vantaggio.
+- **Importatore Partite Chess.com:** Scarica e analizza qualsiasi partita pubblica inserendo il nome utente.
+- **Scacchiera 1:1 fedele:** Pezzi ufficiali da torneo cburnett, coordinate integrate e tray dei pezzi catturati con conteggio del vantaggio materiale.
+- **Bilingue (Italiano e Inglese):** Rilevamento automatico della lingua del telefono e lingua modificabile nelle impostazioni.
 
 ---
 
-## 🚀 Come Eseguire l'Applicazione
+## 🛠️ Tech Stack & Architecture
 
-### Test Rapido nel Browser (Modalità Web & PWA)
-L'applicazione è sviluppata con **Vite + React + TypeScript + Capacitor**:
+- **Frontend:** React 19, TypeScript, Tailwind CSS v4, Lucide Icons, Canvas Confetti.
+- **Chess Engine:** Stockfish 19 Lite WASM + Embedded NNUE Neural Network running in a dedicated Web Worker via standard UCI protocol.
+- **Rules & Logic:** `chess.js` v1.0.
+- **Audio:** Web Audio API zero-latency physical wood sound synthesizer.
+- **Mobile Container:** Capacitor 8 Android.
+- **CI/CD:** Automated GitHub Actions build pipeline creating standalone Android `.apk` artifacts and GitHub Releases on every push.
+
+---
+
+## 💻 Local Development
 
 ```bash
-# Installa le dipendenze
+# Clone the repository
+git clone https://github.com/Tronko104/LocalMint.git
+cd LocalMint
+
+# Install dependencies
 npm install
 
-# Avvia il server di sviluppo
+# Start Vite dev server
 npm run dev
+
+# Build production web bundle & sync to Android
+npm run build
+npx cap sync android
 ```
 
-Apri `http://localhost:5173` nel browser o sul cellulare (in rete locale). L'app è una **PWA completa** e può essere installata direttamente sulla schermata iniziale di Android/iOS come una vera app nativa.
-
 ---
 
-### Creazione dell'APK per Android (Capacitor)
-Il progetto è già pre-configurato con `@capacitor/android` nella cartella `android/`:
+## 📜 License & Credits
 
-1. Genera la build web:
-   ```bash
-   npm run build
-   npx cap sync
-   ```
-
-2. Apri il progetto in **Android Studio**:
-   ```bash
-   npx cap open android
-   ```
-
-3. In Android Studio, clicca su **Build → Build Bundle(s) / APK(s) → Build APK(s)** per ottenere il file `.apk` installabile direttamente su qualsiasi dispositivo Android.
-
----
-
-## 📜 Licenza e Crediti
-- **Codice Progetto:** Rilasciato sotto licenza libera open-source.
-- **Motore:** [Stockfish](https://stockfishchess.org/) (GPLv3).
-- **Puzzle:** [Lichess Open Database](https://database.lichess.org/#puzzles) (CC0 - Pubblico Dominio).
-- **Asset Pezzi:** Vettoriali SVG basati sullo standard Staunton aperto CC-BY-SA.
+- **Code:** Open-source under [GPLv3](LICENSE).
+- **Engine:** [Stockfish Chess](https://stockfishchess.org/) (GPLv3).
+- **Puzzles:** [Lichess Open Database](https://database.lichess.org/#puzzles) (CC0 Public Domain).
+- **Vector Pieces:** Official `cburnett` chess piece vectors (CC BY-SA 3.0).

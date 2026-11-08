@@ -6,7 +6,8 @@ import { MoveHistory, getBadgeDetails } from '../components/MoveHistory';
 import { ChessComImportModal } from '../components/ChessComImportModal';
 import { analyzeGame } from '../utils/analysis';
 import { stockfish } from '../utils/stockfishWorker';
-import type { GameReview, BoardTheme, Evaluation } from '../types/chess';
+import type { GameReview, BoardTheme, Evaluation, Language } from '../types/chess';
+import { translations } from '../utils/i18n';
 import {
   Globe,
   FileText,
@@ -22,13 +23,15 @@ import {
 } from 'lucide-react';
 
 interface AnalysisViewProps {
+  language: Language;
   initialPgn?: string;
   boardTheme: BoardTheme;
 }
 
 const SAMPLE_PGN = `1. e4 e5 2. Nf3 d6 3. d4 Bg4 4. dxe5 Bxf3 5. Qxf3 dxe5 6. Bc4 Nf6 7. Qb3 Qe7 8. Nc3 c6 9. Bg5 b5 10. Nxb5 cxb5 11. Bxb5+ Nbd7 12. O-O-O Rd8 13. Rxd7 Rxd7 14. Rd1 Qe6 15. Bxd7+ Nxd7 16. Qb8+ Nxb8 17. Rd8# 1-0`;
 
-export const AnalysisView: React.FC<AnalysisViewProps> = ({ initialPgn, boardTheme }) => {
+export const AnalysisView: React.FC<AnalysisViewProps> = ({ language, initialPgn, boardTheme }) => {
+  const t = translations[language];
   const [currentPgn, setCurrentPgn] = useState<string>(initialPgn || SAMPLE_PGN);
   const [game, setGame] = useState<Chess>(new Chess());
   const [currentPly, setCurrentPly] = useState<number>(0);
@@ -164,7 +167,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ initialPgn, boardThe
           className="flex-1 bg-[#262522] hover:bg-[#302e2b] border border-[#3d3b37] rounded-xl py-2 px-3 flex items-center justify-center gap-1.5 text-xs font-semibold text-white transition-colors cursor-pointer"
         >
           <Globe className="w-4 h-4 text-[#81b64c]" />
-          <span>Chess.com API</span>
+          <span>Chess.com</span>
         </button>
 
         <button
@@ -175,7 +178,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ initialPgn, boardThe
           className="flex-1 bg-[#262522] hover:bg-[#302e2b] border border-[#3d3b37] rounded-xl py-2 px-3 flex items-center justify-center gap-1.5 text-xs font-semibold text-white transition-colors cursor-pointer"
         >
           <FileText className="w-4 h-4 text-[#5c8bb0]" />
-          <span>Incolla PGN</span>
+          <span>PGN</span>
         </button>
 
         <button
@@ -188,7 +191,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ initialPgn, boardThe
           ) : (
             <Sparkles className="w-4 h-4" />
           )}
-          <span>{review ? 'Rianalizza' : 'Game Review'}</span>
+          <span>{review ? t.reanalyze : t.gameReview}</span>
         </button>
       </div>
 
@@ -221,9 +224,9 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ initialPgn, boardThe
               {review.whiteAccuracy}%
             </div>
             <div>
-              <span className="text-[10px] text-[#8b8987] block font-bold uppercase">Precisione Bianco</span>
+              <span className="text-[10px] text-[#8b8987] block font-bold uppercase">{t.whiteAccuracy}</span>
               <span className="text-xs font-semibold text-white">
-                {review.whiteAccuracy > 80 ? 'Partita Magistrale' : 'Partita Solida'}
+                {review.whiteAccuracy > 80 ? t.masterGame : t.solidGame}
               </span>
             </div>
           </div>
@@ -233,9 +236,9 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ initialPgn, boardThe
           {/* Black Accuracy */}
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <span className="text-[10px] text-[#8b8987] block font-bold uppercase">Precisione Nero</span>
+              <span className="text-[10px] text-[#8b8987] block font-bold uppercase">{t.blackAccuracy}</span>
               <span className="text-xs font-semibold text-white">
-                {review.blackAccuracy > 80 ? 'Partita Magistrale' : 'Partita Solida'}
+                {review.blackAccuracy > 80 ? t.masterGame : t.solidGame}
               </span>
             </div>
             <div className="w-10 h-10 rounded-full bg-[#302e2b] border border-white/30 text-white font-black text-sm flex items-center justify-center shadow-md">

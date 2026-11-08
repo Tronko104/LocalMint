@@ -66,11 +66,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v1.0.1"
+          TAG="v1.0.2"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" release-apk/LocalMint-Chess.apk --clobber
           else
             gh release create "$TAG" release-apk/LocalMint-Chess.apk \
-              --title "LocalMint Chess v1.0.1 (Android APK)" \
-              --notes "Nuova versione v1.0.1: scacchiera 1:1 fedele a Chess.com, pezzi vettoriali ufficiali cburnett, risolto notch/status-bar Android e tray pezzi catturati."
+              --title "LocalMint Chess v1.0.2 (Android APK)" \
+              --notes "Version v1.0.2: English & Italian language support, Chess.com Home screen, bot dialogue speech bubbles, move ribbon, and bottom action bar."
           fi

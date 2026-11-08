@@ -59,6 +59,12 @@ export interface Bot {
   depth: number;
   skillLevel: number; // 0-20 UCI Skill Level
   style: string;
+  quotes?: {
+    start: { it: string; en: string };
+    check: { it: string; en: string };
+    win: { it: string; en: string };
+    lose: { it: string; en: string };
+  };
 }
 
 export interface Puzzle {
@@ -71,6 +77,7 @@ export interface Puzzle {
   turn: 'w' | 'b';
 }
 
-export type ActiveTab = 'play' | 'puzzles' | 'analysis' | 'settings';
+export type ActiveTab = 'home' | 'play' | 'puzzles' | 'analysis' | 'settings';
 export type BoardTheme = 'green' | 'wood' | 'ice' | 'classic';
 export type PieceStyle = 'neo' | 'staunton' | 'minimal';
+export type Language = 'it' | 'en';

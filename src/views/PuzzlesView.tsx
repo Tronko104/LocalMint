@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Chess } from 'chess.js';
 import { ChessBoard } from '../components/ChessBoard';
 import rawPuzzles from '../data/puzzles.json';
-import type { BoardTheme } from '../types/chess';
+import type { BoardTheme, Language } from '../types/chess';
 import { soundManager } from '../utils/audio';
+import { translations } from '../utils/i18n';
 import confetti from 'canvas-confetti';
 import { Flame, Lightbulb, ChevronRight, CheckCircle2, RotateCcw, AlertTriangle } from 'lucide-react';
 
@@ -17,10 +18,12 @@ interface PuzzleItem {
 }
 
 interface PuzzlesViewProps {
+  language: Language;
   boardTheme: BoardTheme;
 }
 
-export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ boardTheme }) => {
+export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ language, boardTheme }) => {
+  const t = translations[language];
   const puzzles: PuzzleItem[] = rawPuzzles as PuzzleItem[];
 
   const [puzzleIndex, setPuzzleIndex] = useState<number>(0);
@@ -32,7 +35,7 @@ export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ boardTheme }) => {
   const [status, setStatus] = useState<'playing' | 'solved' | 'failed'>('playing');
   const [hintArrow, setHintArrow] = useState<{ from: string; to: string } | null>(null);
   const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string>('Trova la mossa migliore!');
+  const [statusMessage, setStatusMessage] = useState<string>('');
 
   const isMounted = useRef(true);
 
@@ -46,27 +49,31 @@ export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ boardTheme }) => {
   const currentPuzzle = puzzles[puzzleIndex] || puzzles[0];
   const isPlayerWhite = currentPuzzle.side_to_move === 'white';
 
-  const loadPuzzle = useCallback((idx: number) => {
-    const pz = puzzles[idx];
-    if (!pz) return;
+  const loadPuzzle = useCallback(
+    (idx: number) => {
+      const pz = puzzles[idx];
+      if (!pz) return;
 
-    const chess = new Chess(pz.fen);
-    setGame(chess);
-    setSolutionStep(0);
-    setStatus('playing');
-    setHintArrow(null);
-    setLastMove(null);
-    setStatusMessage(
-      pz.side_to_move === 'white' ? 'Tocca al Bianco. Trova la mossa vincente!' : 'Tocca al Nero. Trova la mossa vincente!'
-    );
-  }, [puzzles]);
+      const chess = new Chess(pz.fen);
+      setGame(chess);
+      setSolutionStep(0);
+      setStatus('playing');
+      setHintArrow(null);
+      setLastMove(null);
+      setStatusMessage(
+        `${t.puzzlePlaying} ${pz.side_to_move === 'white' ? t.white : t.black}`
+      );
+    },
+    [puzzles, t]
+  );
 
   useEffect(() => {
     loadPuzzle(puzzleIndex);
   }, [puzzleIndex, loadPuzzle]);
 
   const handleNextPuzzle = () => {
-    setPuzzleIndex((prev) => (prev + 1) % puzzles.length);
+    const nextIdx = (puzzleIndex + 1) % puzzles.length;
+    setPuzzleIndex(nextIdx);
   };
 
   const handleRetry = () => {
@@ -75,11 +82,11 @@ export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ boardTheme }) => {
 
   const handleHint = () => {
     if (status !== 'playing') return;
-    const targetMove = currentPuzzle.solution[solutionStep];
-    if (targetMove && targetMove.length >= 4) {
+    const expectedMoveUci = currentPuzzle.solution[solutionStep];
+    if (expectedMoveUci && expectedMoveUci.length >= 4) {
       setHintArrow({
-        from: targetMove.slice(0, 2),
-        to: targetMove.slice(2, 4),
+        from: expectedMoveUci.slice(0, 2),
+        to: expectedMoveUci.slice(2, 4),
       });
     }
   };
@@ -88,14 +95,27 @@ export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ boardTheme }) => {
     if (status !== 'playing') return false;
 
     const userUci = `${from}${to}${promotion || ''}`;
-    const expectedUci = currentPuzzle.solution[solutionStep];
+    const expectedMoveUci = currentPuzzle.solution[solutionStep];
 
-    // Check if move matches solution
-    if (userUci.startsWith(expectedUci.slice(0, 4))) {
-      // Correct Move!
+    const isMatch =
+      userUci === expectedMoveUci ||
+      (expectedMoveUci &&
+        userUci.startsWith(expectedMoveUci.slice(0, 4)) &&
+        !expectedMoveUci.slice(4));
+
+    if (!isMatch) {
+      // Wrong move
+      setStatus('failed');
+      setStatusMessage(t.puzzleFailed);
+      soundManager.playError();
+      setStreak(0);
+      setUserRating((prev) => Math.max(400, prev - 8));
+      return false;
+    }
+
+    try {
       const newGame = new Chess(game.fen());
       const res = newGame.move({ from, to, promotion: promotion || 'q' });
-
       if (res) {
         if (res.captured) soundManager.playCapture();
         else soundManager.playMove();
@@ -107,15 +127,13 @@ export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ boardTheme }) => {
         const nextStep = solutionStep + 1;
         setSolutionStep(nextStep);
 
-        // Check if puzzle is finished
         if (nextStep >= currentPuzzle.solution.length) {
           // Solved!
           setStatus('solved');
-          setStatusMessage('Risolto! Ottima mossa!');
+          setStatusMessage(t.puzzleSolved);
           soundManager.playSuccess();
-          confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 } });
+          confetti({ particleCount: 65, spread: 60, origin: { y: 0.7 } });
 
-          // Update stats
           setUserRating((prev) => prev + 12);
           setStreak((prev) => {
             const nextStreak = prev + 1;
@@ -123,8 +141,7 @@ export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ boardTheme }) => {
             return nextStreak;
           });
         } else {
-          // Play opponent response from solution
-          setStatusMessage('Ben fatto! Continua...');
+          // Opponent response
           setTimeout(() => {
             if (!isMounted.current) return;
             const oppMoveUci = currentPuzzle.solution[nextStep];
@@ -142,7 +159,6 @@ export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ boardTheme }) => {
                 setGame(oppGame);
                 setLastMove({ from: oppFrom, to: oppTo });
                 setSolutionStep(nextStep + 1);
-                setStatusMessage('Tocca a te! Concludi la combinazione!');
               }
             }
           }, 350);
@@ -150,13 +166,7 @@ export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ boardTheme }) => {
 
         return true;
       }
-    } else {
-      // Wrong move
-      setStatus('failed');
-      setStatusMessage('Non è la mossa migliore. Riprova!');
-      soundManager.playError();
-      setStreak(0);
-      setUserRating((prev) => Math.max(400, prev - 8));
+    } catch {
       return false;
     }
 
@@ -164,15 +174,17 @@ export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ boardTheme }) => {
   };
 
   return (
-    <div className="flex flex-col h-full max-w-lg mx-auto w-full px-2 py-2">
-      {/* Top Stats Banner */}
-      <div className="flex items-center justify-between bg-[#262522] border border-[#3d3b37] rounded-xl px-4 py-2.5 mb-2 shadow-sm">
+    <div className="flex flex-col h-full max-w-md mx-auto w-full px-2 py-1 select-none justify-between">
+      {/* Header with Rating, Streak, Difficulty */}
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#262522] rounded-xl border border-[#3d3b37] shrink-0">
         <div className="flex items-center gap-3">
           <div>
-            <span className="text-[10px] text-[#8b8987] uppercase font-bold tracking-wider">Rating Puzzle</span>
-            <div className="text-base font-extrabold text-white flex items-center gap-1.5">
+            <span className="text-[10px] text-[#8b8987] uppercase font-bold tracking-wider">
+              {t.puzzleRating}
+            </span>
+            <div className="text-sm font-extrabold text-white flex items-center gap-1.5 leading-tight">
               <span>{userRating}</span>
-              <span className="text-[11px] font-bold text-[#81b64c] bg-[#81b64c]/15 px-1 rounded">
+              <span className="text-[10px] font-bold text-[#81b64c] bg-[#81b64c]/15 px-1 rounded">
                 +12
               </span>
             </div>
@@ -180,22 +192,30 @@ export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ boardTheme }) => {
 
           <div className="h-6 w-px bg-[#3d3b37]" />
 
-          <div className="flex items-center gap-1.5 text-xs font-bold text-[#f0c15c]">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#f08c38]">
             <Flame className="w-4 h-4 fill-current" />
-            <span>Serie: {streak}</span>
-            <span className="text-[10px] text-[#8b8987] font-medium">(Record: {bestStreak})</span>
+            <span>{t.puzzleStreak}: {streak}</span>
+            <span className="text-[10px] text-[#8b8987] font-medium">({t.bestRecord}: {bestStreak})</span>
           </div>
         </div>
 
         <div className="text-right">
-          <span className="text-[10px] text-[#8b8987] block font-semibold">Difficoltà</span>
-          <span className="text-xs font-bold text-[#c3c1be]">
-            {currentPuzzle.rating} Elo
-          </span>
+          <span className="text-[10px] text-[#8b8987] block font-semibold">{t.difficulty}</span>
+          <span className="text-xs font-bold text-[#c3c1be]">{currentPuzzle.rating} Elo</span>
         </div>
       </div>
 
-      {/* Main Board */}
+      {/* Cat Mascot Speech Bubble (Screenshot 234005) */}
+      <div className="flex items-center gap-2.5 bg-[#262522] border border-[#3d3b37] rounded-xl px-3 py-1.5 shrink-0 my-0.5 shadow-xs">
+        <div className="w-8 h-8 rounded-xl bg-[#f0c15c]/20 border border-[#f0c15c]/40 flex items-center justify-center text-lg shrink-0">
+          🐱
+        </div>
+        <p className="text-[11px] font-semibold text-[#c3c1be] leading-tight">
+          {t.catSpeech}
+        </p>
+      </div>
+
+      {/* Main Board (Strict 1:1 Aspect Ratio) */}
       <div className="flex items-center justify-center w-full my-auto shrink-0">
         <ChessBoard
           game={game}
@@ -208,9 +228,9 @@ export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ boardTheme }) => {
         />
       </div>
 
-      {/* Status Box & Move Instructions */}
+      {/* Status Box */}
       <div
-        className={`mt-2 p-3 rounded-xl border flex items-center justify-between transition-all ${
+        className={`px-3 py-2 rounded-xl border flex items-center justify-between shrink-0 my-1 transition-all ${
           status === 'solved'
             ? 'bg-[#81b64c]/20 border-[#81b64c] text-white'
             : status === 'failed'
@@ -218,48 +238,48 @@ export const PuzzlesView: React.FC<PuzzlesViewProps> = ({ boardTheme }) => {
             : 'bg-[#262522] border-[#3d3b37] text-white'
         }`}
       >
-        <div className="flex items-center gap-2.5">
-          {status === 'solved' ? (
-            <CheckCircle2 className="w-5 h-5 text-[#81b64c] shrink-0" />
-          ) : status === 'failed' ? (
-            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-          ) : (
-            <span className="text-lg">🎯</span>
-          )}
-          <div>
-            <div className="font-bold text-xs">{statusMessage}</div>
-            <div className="text-[10px] text-[#c3c1be] flex items-center gap-1.5 mt-0.5">
-              <span>Temi:</span>
-              {currentPuzzle.themes.slice(0, 3).map((t, idx) => (
-                <span key={idx} className="bg-[#302e2b] px-1.5 py-0.2 rounded text-[10px] text-[#81b64c]">
-                  #{t}
-                </span>
-              ))}
-            </div>
-          </div>
+        <div className="flex items-center gap-2">
+          {status === 'solved' && <CheckCircle2 className="w-4 h-4 text-[#81b64c] shrink-0" />}
+          {status === 'failed' && <AlertTriangle className="w-4 h-4 text-[#ca3431] shrink-0" />}
+          <span className="text-xs font-bold">{statusMessage}</span>
         </div>
 
-        {/* Action Button */}
-        {status === 'solved' ? (
+        {status === 'playing' && (
+          <button
+            onClick={handleHint}
+            className="flex items-center gap-1 text-[11px] font-bold text-[#f0c15c] hover:text-[#f8d78a] bg-[#302e2b] px-2 py-1 rounded-lg border border-[#4d4b46] cursor-pointer"
+          >
+            <Lightbulb className="w-3.5 h-3.5" />
+            <span>{t.hint}</span>
+          </button>
+        )}
+      </div>
+
+      {/* Big 3D Green Bottom Button matching Chess.com: Risolvi problemi / Prossimo problema */}
+      <div className="shrink-0 mb-1">
+        {status === 'playing' ? (
+          <button
+            onClick={handleHint}
+            className="w-full bg-[#81b64c] hover:bg-[#96c95d] active:scale-[0.98] text-white font-black text-sm py-2.5 rounded-xl shadow-md transition-all cursor-pointer border-b-2 border-[#5d8b32] flex items-center justify-center gap-2"
+          >
+            <Lightbulb className="w-4 h-4" />
+            <span>{t.solvePuzzles}</span>
+          </button>
+        ) : status === 'solved' ? (
           <button
             onClick={handleNextPuzzle}
-            className="bg-[#81b64c] hover:bg-[#96c95d] text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-md transition-transform active:scale-95 cursor-pointer"
+            className="w-full bg-[#81b64c] hover:bg-[#96c95d] active:scale-[0.98] text-white font-black text-sm py-2.5 rounded-xl shadow-md transition-all cursor-pointer border-b-2 border-[#5d8b32] flex items-center justify-center gap-2"
           >
-            Prossimo <ChevronRight className="w-4 h-4" />
-          </button>
-        ) : status === 'failed' ? (
-          <button
-            onClick={handleRetry}
-            className="bg-[#302e2b] hover:bg-[#3d3b37] text-white font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 border border-[#4d4b46] transition-colors cursor-pointer"
-          >
-            <RotateCcw className="w-3.5 h-3.5" /> Riprova
+            <span>{t.nextPuzzle}</span>
+            <ChevronRight className="w-4 h-4 stroke-[3]" />
           </button>
         ) : (
           <button
-            onClick={handleHint}
-            className="bg-[#302e2b] hover:bg-[#3d3b37] text-[#f0c15c] font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 border border-[#4d4b46] transition-colors cursor-pointer"
+            onClick={handleRetry}
+            className="w-full bg-[#ca3431] hover:bg-[#e04542] active:scale-[0.98] text-white font-black text-sm py-2.5 rounded-xl shadow-md transition-all cursor-pointer border-b-2 border-[#94201e] flex items-center justify-center gap-2"
           >
-            <Lightbulb className="w-3.5 h-3.5" /> Aiuto
+            <RotateCcw className="w-4 h-4" />
+            <span>{t.cancel} / Riprova</span>
           </button>
         )}
       </div>
