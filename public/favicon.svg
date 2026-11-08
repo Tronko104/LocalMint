@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="mintGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#81b64c"/>
+      <stop offset="100%" stop-color="#558b2f"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="24" fill="#262522"/>
+  <circle cx="50" cy="50" r="42" fill="none" stroke="url(#mintGrad)" stroke-width="4"/>
+  <!-- Stylized Mint Pawn -->
+  <path d="M50 22a10 10 0 1 0 0.001 0z" fill="url(#mintGrad)"/>
+  <path d="M38 40c0-6 24-6 24 0-4 10 4 16 6 24H32c2-8 10-14 6-24z" fill="url(#mintGrad)"/>
+  <path d="M28 70h44c0 0 2 6-4 8H32c-6-2-4-8-4-8z" fill="url(#mintGrad)"/>
+  <circle cx="50" cy="34" r="3" fill="#ffffff" opacity="0.8"/>
+</svg>

@@ -1,0 +1,17 @@
+{
+  "short_name": "LocalMint",
+  "name": "LocalMint Chess",
+  "description": "App di scacchi open-source con motore Stockfish NNUE offline e analisi gratuita illimitata.",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#302e2b",
+  "theme_color": "#302e2b",
+  "display": "standalone",
+  "orientation": "portrait"
+}
